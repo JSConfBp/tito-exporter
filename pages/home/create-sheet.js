@@ -10,7 +10,7 @@ export default (data) => {
 	XLSX.utils.book_append_sheet(wb, ws, "People");
 
 	// write workbook
-	const buf = XLSX.write(wb, { bookType:'xlsx', type:'buffer' });
+	const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
 
-	console.log(buf);
+	return buf
 }

@@ -1,14 +1,27 @@
 const fetch = require('isomorphic-unfetch')
 
-const getOrders = async (res) => {
-	const getUrl = (page) => `https://api.tito.io/v3/jsconf-bp/jsconf-budapest-2019/registrations?view=extended&page=${page}`;
+
+const events = {
+	'jsconf-budapest-2019': 'jsconf-bp/jsconf-budapest-2019',
+	'reinforce-conf-2019': 'reinforceconf/reinforce2019',
+	'jsconf-budapest-2020': 'jsconf-bp/jsconf-budapest-2020',
+}
+
+const getOrders = async (req, res) => {
+	const { event } = req.query;
+
+	console.log(event);
+
+	if (!event) throw Error('Missing event')
+
+	const getUrl = (page) => `https://api.tito.io/v3/${events[event]}/registrations?view=extended&page=${page}`;
 	const getPage = async function* getPage() {
 		let page = 1
 		let hasNextPage = true
 
 		while (hasNextPage) {
 			console.log('fetching ', getUrl(page));
-			
+
 			const response = await fetch(
 				getUrl(page),
 				{
@@ -24,16 +37,20 @@ const getOrders = async (res) => {
 			if (data.meta.next_page) {
 				page = data.meta.next_page
 				yield {
+					last: false,
 					meta: data.meta,
 					data: data.registrations,
 				}
 			} else {
 				hasNextPage = false
-				return {
+				yield {
+					last: true,
 					data: data.registrations
 				};
 			}
 		}
+
+		return;
 	}
 
 	try {
@@ -49,10 +66,10 @@ const getOrders = async (res) => {
 			hasMeta = true
 
 			res.write(
-				JSON.stringify(item.data).substr(1).replace(/]$/, '') + ','
+				JSON.stringify(item.data).substr(1).replace(/]$/, '') + (item.last ? '' : ',')
 			)
 		}
-		res.write('{}]')
+		res.write(']')
 		res.end()
 	} catch(e) {
 		console.log(e);
@@ -71,7 +88,7 @@ module.exports.get = async (req, res) => {
 	}
 
 	try {
-		const orders = await getOrders(res)
+		const orders = await getOrders(req, res)
 		res.send(orders)
 	} catch (e) {
 		res.sendStatus(403)

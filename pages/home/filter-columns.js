@@ -4,7 +4,7 @@ const getTickets = (quantities) => {
 	return Object.values(quantities).map(ticket => {
 		const { release, quantity } = ticket
 		return `${quantity} x ${release}`
-	}).join('\n')
+	}).join(", ")
 
 }
 
@@ -16,7 +16,12 @@ const getBillingAddress = (billing_address) => {
 		vat_number,
 	} = billing_address;
 
-	return `${address}\n${city}, ${country}\nVAT: ${vat_number}`
+	return {
+		"Billing Address": address,
+		City: city,
+		Country: country,
+		"VAT Number": vat_number,
+	}
 }
 
 export default (data) => data.map(row => {
@@ -35,7 +40,7 @@ export default (data) => data.map(row => {
 			payment_reference,
 		} = row
 
-		const address = billing_address ? getBillingAddress(billing_address) : '';
+		const billingData = billing_address ? getBillingAddress(billing_address) : '';
 		const tickets = getTickets(quantities);
 
 		const columns = {
@@ -44,7 +49,7 @@ export default (data) => data.map(row => {
 			Email: email || '',
 			"Phone Number": phone_number || '',
 			"Company Name": company_name || '',
-			"Billing Address": address || '',
+			...billingData,
 			Tickets: tickets,
 			Reference: reference,
 			Total: total || '',

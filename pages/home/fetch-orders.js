@@ -2,9 +2,9 @@ import fetch from 'isomorphic-unfetch'
 
 const getProgress = (total, current) => (total - current)
 
-export default async (setCompleted, onReady) => {
+export default async (event, setCompleted, onReady) => {
 	try {
-	  const req = await fetch('/api/orders')
+	  const req = await fetch(`/api/orders?event=${event}`)
 	  const body = req.body
 
 	  const total = parseInt(req.headers.get('x-item-count'), 10);
@@ -41,7 +41,6 @@ export default async (setCompleted, onReady) => {
 	  })
 	  const resp = await new Response(stream)
 	  const data = await resp.json()
-	  data.pop() // remove last dud
 	  onReady(data)
 	} catch (e) {
 	  console.error(e);
