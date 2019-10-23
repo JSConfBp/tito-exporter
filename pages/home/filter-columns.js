@@ -4,7 +4,7 @@ const getTickets = (quantities) => {
 	return Object.values(quantities).map(ticket => {
 		const { release, quantity } = ticket
 		return `${quantity} x ${release}`
-	}).join(", ")
+	}).join("\n")
 
 }
 
@@ -44,6 +44,7 @@ export default (data) => data.map(row => {
 		const tickets = getTickets(quantities);
 
 		const columns = {
+			quantities,
 			Created: created_at,
 			Name: name || '',
 			Email: email || '',

@@ -12,9 +12,9 @@ import Button from '@material-ui/core/Button';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
-import InputLabel from '@material-ui/core/InputLabel';
 
 import Header from '../../components/Header'
+import Events from '../../components/Events';
 
 import fetchOrders from './fetch-orders'
 import filterColumns from './filter-columns'
@@ -27,13 +27,22 @@ const useStyles = makeStyles(theme => ({
     },
   },
   section: {
-    padding: '1rem 0'
+    padding: '1rem 0',
+    display: 'flex',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   main: {
     paddingTop: '3rem'
   },
   getOrders: {
-    marginBottom: '1rem'
+    marginLeft: '1rem'
+  },
+  progress: {
+    width: '100%'
+  },
+  hidden: {
+    display: 'none'
   }
 }))
 
@@ -48,7 +57,13 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
 
 	const closeErrorNotification = () => {
 		setErrorNotification(false)
-	}
+  }
+
+  const eventList = {
+    'reinforce-conf-2019': "Reinforce Conference 2019",
+    'jsconf-budapest-2019': "JSConf Budapest 2019",
+    'jsconf-budapest-2020': "JSConf Budapest 2020",
+  };
 
 	useEffect(() => {
 		const rawToken = (new URL(window.location.href)).searchParams.get('token')
@@ -60,6 +75,68 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
 		return () => {}
   })
 
+  const getOrders = () => {
+    setLoading(true)
+    fetchOrders(event, setCompleted, (data) => {
+      const sheetData = filterColumns(data)
+
+      console.log(
+        sheetData.reduce((obj, row) => {
+          console.log(row);
+
+          if (!obj[row.Country]) {
+            obj[row.Country] = 0
+          }
+
+console.log(row.quantities);
+
+
+          obj[row.Country] += 1; // (add tickets number)
+
+
+          return arr
+        },{})
+      );
+
+      setXls(createSheet(sheetData))
+      setHasXls(true)
+      setLoading(false)
+    })
+  }
+
+
+  const downloadOrders = () => {
+    const fileName = `${event}_tito-export_${dayjs().format('YYYY-MM-DD')}.xlsx`
+    const blob = new Blob([xls], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8;'
+    });
+
+    if (navigator.msSaveBlob) { // IE 10+
+      navigator.msSaveBlob(blob, fileName);
+    } else {
+      var link = document.createElement("a");
+      if (link.download !== undefined) { // feature detection
+        // Browsers that support HTML5 download attribute
+        var url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+  }
+
+  const reset = () => {
+    setErrorNotification(false);
+    setLoading(false);
+    setCompleted(0);
+    setEvent('');
+    setXls(null);
+    setHasXls(false);
+  }
+
   return (
     <>
       <CssBaseline />
@@ -67,72 +144,45 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
       <Container component="main" maxWidth="md" className={ classes.main }>
 
         <div className={ classes.section }>
-          <Select
-            value={event}
-            onChange={ (data) => setEvent(data.target.value) }
-            displayEmpty
-            inputProps={{
-              name: 'event',
-              id: 'select-event',
-            }}
-          >
-            <MenuItem value="" disabled>
-              Select Event
-            </MenuItem>
-            <MenuItem value={'reinforce-conf-2019'}>Reinforce Conference 2019</MenuItem>
-            <MenuItem value={'jsconf-budapest-2019'}>JSConf Budapest 2019</MenuItem>
-            <MenuItem value={'jsconf-budapest-2020'}>JSConf Budapest 2020</MenuItem>
-          </Select>
-        </div>
-
-        <div className={ classes.section }>
+          <Events
+            disabled={ loading }
+            event={ event }
+            setEvent={ e => setEvent(e) }
+            events={ eventList }
+          />
           <Button
             className={ classes.getOrders }
             variant={ !(loading || xls) ? "contained" : 'text'}
-            onClick={ () => {
-              setLoading(true)
-              fetchOrders(event, setCompleted, (data) => {
-                setXls(createSheet(filterColumns(data)))
-                setHasXls(true)
-                setLoading(false)
-              })}
-            }
-            disabled={ loading || xls }
+            onClick={ () => getOrders() }
+            disabled={ !event || loading || xls }
           >
             { loading ? 'Getting orders...' : 'Get orders'}
           </Button>
-          {loading ? (
-            <LinearProgress variant="buffer" value={completed} valueBuffer={ completed + 2 } />
-          ) : (<LinearProgress variant="determinate" value={0} />)}
         </div>
 
         <div className={ classes.section }>
+          {loading ? (
+            <LinearProgress className={classes.progress} variant="buffer" value={completed} valueBuffer={ completed + 2 } />
+          ) : (
+            <LinearProgress className={classes.progress} variant="determinate" value={0} />
+          )}
+        </div>
+
+        <div className={ classnames(classes.section, !hasXls && classes.hidden) }>
           <Button
+            color="primary"
             variant="contained"
-            onClick={ () => {
-              const fileName = `${event}_tito-export_${dayjs().format('YYYY-MM-DD')}.xlsx`
-              const blob = new Blob([xls], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8;' });
-
-              if (navigator.msSaveBlob) { // IE 10+
-                navigator.msSaveBlob(blob, fileName);
-              } else {
-                var link = document.createElement("a");
-                if (link.download !== undefined) { // feature detection
-                  // Browsers that support HTML5 download attribute
-                  var url = URL.createObjectURL(blob);
-                  link.setAttribute("href", url);
-                  link.setAttribute("download", fileName);
-                  link.style.visibility = 'hidden';
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }
-              }
-
-            } }
+            onClick={ () => downloadOrders() }
             disabled={ !hasXls }
           >
             Download XLS
+          </Button>
+
+          <Button
+            variant="text"
+            onClick={ () => reset() }
+          >
+            or select another event
           </Button>
         </div>
 
