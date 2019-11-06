@@ -32,8 +32,13 @@ const Events = ({
 		<MenuItem value="" disabled>
 			Select event
 		</MenuItem>
-		{ Object.entries(events).map(([event, label]) => (
-			<MenuItem value={ event }>{ label }</MenuItem>
+		{ Object.entries(events).map(([event, obj]) => (
+			<MenuItem 
+				value={ event } 
+				key={ event }
+			>
+				{ obj.label }
+			</MenuItem>
 		)) }
 	</Select>
   )

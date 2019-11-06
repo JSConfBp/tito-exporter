@@ -10,7 +10,7 @@ const events = {
 const getOrders = async (req, res) => {
 	const { event } = req.query;
 
-	console.log(event);
+	console.log('getOrders', event);
 
 	if (!event) throw Error('Missing event')
 
@@ -45,6 +45,7 @@ const getOrders = async (req, res) => {
 				hasNextPage = false
 				yield {
 					last: true,
+					meta: data.meta,
 					data: data.registrations
 				};
 			}
@@ -79,13 +80,13 @@ const getOrders = async (req, res) => {
 }
 
 module.exports.get = async (req, res) => {
-	if (
-		process.env.ADMIN_TOKEN
-		&& process.env.ADMIN_TOKEN !== req.headers.token
-	) {
-		res.status(401).send()
-		return;
-	}
+	// if (
+	// 	process.env.ADMIN_TOKEN
+	// 	&& process.env.ADMIN_TOKEN !== req.headers.token
+	// ) {
+	// 	res.status(401).send()
+	// 	return;
+	// }
 
 	try {
 		const orders = await getOrders(req, res)

@@ -19,6 +19,9 @@ import Events from '../../components/Events';
 import fetchOrders from './fetch-orders'
 import filterColumns from './filter-columns'
 import createSheet from './create-sheet'
+import calculateCatering from './calculate-catering'
+
+import eventsConfig from '../../events.config'
 
 const useStyles = makeStyles(theme => ({
   '@global': {
@@ -46,6 +49,30 @@ const useStyles = makeStyles(theme => ({
   }
 }))
 
+
+const downloadOrders = (event, xls) => {
+  const fileName = `${event}_tito-export_${dayjs().format('YYYY-MM-DD_HHmm')}.xlsx`
+  const blob = new Blob([xls], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8;'
+  });
+
+  if (navigator.msSaveBlob) { // IE 10+
+    navigator.msSaveBlob(blob, fileName);
+  } else {
+    var link = document.createElement("a");
+    if (link.download !== undefined) { // feature detection
+      // Browsers that support HTML5 download attribute
+      var url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", fileName);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+}
+
 const IndexPage = ({ jsTickets, cssTickets }) => {
   const classes = useStyles();
   const [ errorNotification, setErrorNotification ] = useState(false);
@@ -58,12 +85,6 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
 	const closeErrorNotification = () => {
 		setErrorNotification(false)
   }
-
-  const eventList = {
-    'reinforce-conf-2019': "Reinforce Conference 2019",
-    'jsconf-budapest-2019': "JSConf Budapest 2019",
-    'jsconf-budapest-2020': "JSConf Budapest 2020",
-  };
 
 	useEffect(() => {
 		const rawToken = (new URL(window.location.href)).searchParams.get('token')
@@ -78,54 +99,15 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
   const getOrders = () => {
     setLoading(true)
     fetchOrders(event, setCompleted, (data) => {
-      const sheetData = filterColumns(data)
-
-      console.log(
-        sheetData.reduce((obj, row) => {
-          console.log(row);
-
-          if (!obj[row.Country]) {
-            obj[row.Country] = 0
-          }
-
-console.log(row.quantities);
-
-
-          obj[row.Country] += 1; // (add tickets number)
-
-
-          return arr
-        },{})
-      );
+      const dataWithCatering = calculateCatering(data, eventsConfig[event])
+      const sheetData = filterColumns(dataWithCatering)
+      
+      console.log(sheetData);
 
       setXls(createSheet(sheetData))
       setHasXls(true)
       setLoading(false)
     })
-  }
-
-
-  const downloadOrders = () => {
-    const fileName = `${event}_tito-export_${dayjs().format('YYYY-MM-DD')}.xlsx`
-    const blob = new Blob([xls], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8;'
-    });
-
-    if (navigator.msSaveBlob) { // IE 10+
-      navigator.msSaveBlob(blob, fileName);
-    } else {
-      var link = document.createElement("a");
-      if (link.download !== undefined) { // feature detection
-        // Browsers that support HTML5 download attribute
-        var url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", fileName);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    }
   }
 
   const reset = () => {
@@ -148,13 +130,13 @@ console.log(row.quantities);
             disabled={ loading }
             event={ event }
             setEvent={ e => setEvent(e) }
-            events={ eventList }
+            events={ eventsConfig }
           />
           <Button
             className={ classes.getOrders }
             variant={ !(loading || xls) ? "contained" : 'text'}
             onClick={ () => getOrders() }
-            disabled={ !event || loading || xls }
+            disabled={ !event || loading || !!xls }
           >
             { loading ? 'Getting orders...' : 'Get orders'}
           </Button>
@@ -172,7 +154,7 @@ console.log(row.quantities);
           <Button
             color="primary"
             variant="contained"
-            onClick={ () => downloadOrders() }
+            onClick={ () => downloadOrders(event, xls) }
             disabled={ !hasXls }
           >
             Download XLS

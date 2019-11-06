@@ -5,7 +5,10 @@ const getTickets = (quantities) => {
 		const { release, quantity } = ticket
 		return `${quantity} x ${release}`
 	}).join("\n")
+}
 
+const getCatering = (catering) => {
+	return catering.join("\n")
 }
 
 const getBillingAddress = (billing_address) => {
@@ -34,6 +37,7 @@ export default (data) => data.map(row => {
 			company_name,
 			billing_address,
 			quantities,
+			catering,
 			reference,
 			total,
 			payment_option_provider_name,
@@ -41,18 +45,19 @@ export default (data) => data.map(row => {
 		} = row
 
 		const billingData = billing_address ? getBillingAddress(billing_address) : '';
-		const tickets = getTickets(quantities);
+		const Tickets = getTickets(quantities);
+		const Catering = getCatering(catering);
 
 		const columns = {
-			quantities,
 			Created: created_at,
 			Name: name || '',
 			Email: email || '',
 			"Phone Number": phone_number || '',
 			"Company Name": company_name || '',
 			...billingData,
-			Tickets: tickets,
+			Tickets,
 			Reference: reference,
+			Catering,
 			Total: total || '',
 			"Payment Provider": payment_option_provider_name || '',
 			"Payment Reference": payment_reference || '',
