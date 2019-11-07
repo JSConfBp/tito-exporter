@@ -1,14 +1,13 @@
 
 
+import { getCateringPerTicket } from './calculate-catering'
+import numeral from 'numeral'
+
 const getTickets = (quantities) => {
 	return Object.values(quantities).map(ticket => {
 		const { release, quantity } = ticket
 		return `${quantity} x ${release}`
 	}).join("\n")
-}
-
-const getCatering = (catering) => {
-	return catering.join("\n")
 }
 
 const getBillingAddress = (billing_address) => {
@@ -27,7 +26,34 @@ const getBillingAddress = (billing_address) => {
 	}
 }
 
-export default (data) => data.map(row => {
+const getItemizedCosts = (tickets, eventConfig) => {
+	return tickets.map((ticket, i) => {
+		const price = parseFloat(ticket.price)
+
+		const netCatering = getCateringPerTicket(ticket.release_title, eventConfig)
+		const netTicket = (price / 1.27) - netCatering;
+
+		const grossTicket = netTicket * 1.27
+		const grossCatering = netCatering * 1.27
+		
+		const netTotal = netTicket + netCatering
+		const taxTotal = (netTicket * 0.27) + (netCatering * 0.27)
+
+		numeral.defaultFormat('0,0.00')
+		
+		return {
+			netTicket: numeral(netTicket).format(),
+			grossTicket: numeral(grossTicket).format(),
+			netCatering: numeral(netCatering).format(),
+			grossCatering: numeral(grossCatering).format(),
+			netTotal: numeral(netTotal).format(),
+			taxTotal: numeral(taxTotal).format(),
+		}
+	})
+
+}
+
+export default (data, eventConfig) => data.map(row => {
 	if (row) {
 		const {
 			created_at,
@@ -38,6 +64,7 @@ export default (data) => data.map(row => {
 			billing_address,
 			quantities,
 			catering,
+			tickets,
 			reference,
 			total,
 			payment_option_provider_name,
@@ -46,8 +73,11 @@ export default (data) => data.map(row => {
 
 		const billingData = billing_address ? getBillingAddress(billing_address) : '';
 		const Tickets = getTickets(quantities);
-		const Catering = getCatering(catering);
+		const costs = getItemizedCosts(tickets, eventConfig);
 
+		const getCostField = (field) => costs.map( cost => cost[field]).join("\n")
+		console.log(costs);
+		
 		const columns = {
 			Created: created_at,
 			Name: name || '',
@@ -56,8 +86,13 @@ export default (data) => data.map(row => {
 			"Company Name": company_name || '',
 			...billingData,
 			Tickets,
-			Reference: reference,
-			Catering,
+			"Tito Reference": reference,
+			"NET Ticket": getCostField('netTicket'),
+			"GROSS Ticket": getCostField('grossTicket'),
+			"NET Catering": getCostField('netCatering'),
+			"GROSS Catering": getCostField('grossCatering'),
+			"NET Total": getCostField('netTotal'),
+			"Tax": getCostField('taxTotal'),
 			Total: total || '',
 			"Payment Provider": payment_option_provider_name || '',
 			"Payment Reference": payment_reference || '',

@@ -100,7 +100,7 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
     setLoading(true)
     fetchOrders(event, setCompleted, (data) => {
       const dataWithCatering = calculateCatering(data, eventsConfig[event])
-      const sheetData = filterColumns(dataWithCatering)
+      const sheetData = filterColumns(dataWithCatering, eventsConfig[event])
       
       console.log(sheetData);
 
