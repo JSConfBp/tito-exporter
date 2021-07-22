@@ -45,7 +45,7 @@
     "react-helmet": "^5.2.1",
     "route-cache": "^0.4.4",
     "styled-jsx": "^3.2.2",
-    "xlsx": "^0.15.1",
+    "xlsx": "^0.17.0",
     "xlsx-style": "^0.8.13"
   },
   "browserslist": [
